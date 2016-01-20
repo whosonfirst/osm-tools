@@ -5,8 +5,11 @@ import os
 import logging
 import requests
 
-import elementtree.ElementTree as ET
-
+try:
+    import elementtree.ElementTree as ET
+except Exception, e:
+    import xml.etree.ElementTree as ET
+        
 def parse_rel(id):
 
     tree = fetch_el("relation", id)
