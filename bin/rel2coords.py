@@ -12,8 +12,12 @@ except Exception, e:
         
 def parse_rel(id):
 
-    tree = fetch_el("relation", id)
-    rel = tree.find('relation')
+    try:
+        tree = fetch_el("relation", id)
+        rel = tree.find('relation')
+    except Exception, e:
+        logging.error("Failed to parse relation %s, because %s" % (id, e))
+        yield None
 
     for m in rel.findall('member'):
 
@@ -25,19 +29,30 @@ def parse_rel(id):
             continue
 
         if type == "way":
-            for c in parse_way(ref):
-                yield c
+            iter = parse_way(ref)
         elif type == "node":
-            for c in parse_node(ref):
-                yield c
+            iter = parse_node(ref)
         else:
             logging.error("unknown type (%s)" % type)
             continue
 
+        # this is wrong and broken but that it not today's problem...
+
+        for i in iter:
+
+            if not i:
+                continue
+
+            yield i.next()
+
 def parse_way(id):
 
-    tree = fetch_el("way", id)
-    way = tree.find("way")
+    try:
+        tree = fetch_el("way", id)
+        way = tree.find("way")
+    except Exception, e:
+        logging.error("Failed to parse way %s, because %s" % (id, e))
+        yield None
 
     for n in way.findall("nd"):
         ref = n.attrib.get("ref", None)
@@ -50,13 +65,20 @@ def parse_way(id):
 
 def parse_node(id):
 
-    tree = fetch_el("node", id)
-    node = tree.find("node")
+    try:
+        tree = fetch_el("node", id)
+        node = tree.find("node")
+    except Exception, e:
+        logging.error("Failed to parse node %s, because %s" % (id, e))
+        yield None
 
     lat = node.attrib.get("lat")
     lon = node.attrib.get("lon")
 
-    return (lat, lon)
+    lat = float(lat)
+    lon = float(lon)
+
+    yield (lat, lon)
 
 def fetch_el(el, id):
 
