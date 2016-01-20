@@ -31,8 +31,6 @@ def parse_rel(id):
             logging.error("unknown type (%s)" % type)
             continue
 
-    print rel
-
 def parse_way(id):
 
     tree = fetch_el("way", id)
