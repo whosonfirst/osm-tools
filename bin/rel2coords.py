@@ -4,6 +4,7 @@ import sys
 import os
 import logging
 import requests
+import json
 
 try:
     import elementtree.ElementTree as ET
@@ -29,21 +30,21 @@ def parse_rel(id):
             continue
 
         if type == "way":
-            iter = parse_way(ref)
+            for n in parse_way(ref):
+
+                if n:
+                    yield n
+
         elif type == "node":
-            iter = parse_node(ref)
+
+            n = parse_node(ref)
+
+            if n:
+                yield n
+
         else:
             logging.error("unknown type (%s)" % type)
             continue
-
-        # this is wrong and broken but that it not today's problem...
-
-        for i in iter:
-
-            if not i:
-                continue
-
-            yield i.next()
 
 def parse_way(id):
 
@@ -70,7 +71,7 @@ def parse_node(id):
         node = tree.find("node")
     except Exception, e:
         logging.error("Failed to parse node %s, because %s" % (id, e))
-        yield None
+        return None
 
     lat = node.attrib.get("lat")
     lon = node.attrib.get("lon")
@@ -78,7 +79,7 @@ def parse_node(id):
     lat = float(lat)
     lon = float(lon)
 
-    yield (lat, lon)
+    return (lat, lon)
 
 def fetch_el(el, id):
 
@@ -94,12 +95,18 @@ if __name__ == '__main__':
 
     id = sys.argv[1]
 
+    coords = list( parse_rel(id) )
+    print json.dumps(coords)
+                   
+    """
     from polyline.codec import PolylineCodec
-    pl = PolylineCodec().encode(list( parse_rel(id) ))
+    pl = PolylineCodec().encode( ))
 
     print pl
+    """
 
     """
     for c in parse_rel(id):
         print c
     """
+
