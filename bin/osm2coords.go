@@ -56,24 +56,24 @@ func ProcessRel(id int) ([]*Node, error) {
 
 	// fmt.Printf("%s", rsp)
 
-	type Tree struct {
+	type OSM struct {
 		XMLName xml.Name `xml:"osm"`
 		Rel     Rel      `xml:"relation"`
 	}
 
-	tree := Tree{}
-	err = xml.Unmarshal(rsp, &tree)
+	osm := OSM{}
+	err = xml.Unmarshal(rsp, &osm)
 
 	if err != nil {
 		return nil, err
 	}
 
-	count := len(tree.Rel.Members)
+	count := len(osm.Rel.Members)
 	tmp := make([][]*Node, count)
 
 	wg := new(sync.WaitGroup)
 
-	for idx, m := range tree.Rel.Members {
+	for idx, m := range osm.Rel.Members {
 
 		wg.Add(1)
 
@@ -81,11 +81,30 @@ func ProcessRel(id int) ([]*Node, error) {
 
 			defer wg.Done()
 
-			if m.Type == "way" {
-				nodes, _ := ProcessWay(m.Id)
+			if m.Type == "relation" {
+				nodes, err := ProcessRel(m.Id)
+
+				if err != nil {
+				       fmt.Println(err)
+				}
+
+				tmp[idx] = nodes
+
+			} else if m.Type == "way" {
+				nodes, err := ProcessWay(m.Id)
+
+				if err != nil {
+				       fmt.Println(err)
+				}
+
 				tmp[idx] = nodes
 			} else if m.Type == "node" {
-				node, _ := ProcessNode(m.Id)
+				node, err := ProcessNode(m.Id)
+
+				if err != nil {
+				       fmt.Println(err)
+				}
+
 				tmp[idx] = []*Node{node}
 			} else {
 				fmt.Printf("%d is unknown\n", idx)
@@ -95,8 +114,6 @@ func ProcessRel(id int) ([]*Node, error) {
 	}
 
 	wg.Wait()
-
-	// fmt.Println(len(tmp))
 
 	nodes := make([]*Node, 0)
 
@@ -120,24 +137,24 @@ func ProcessWay(id int) ([]*Node, error) {
 
 	// fmt.Printf("%s", rsp)
 
-	type Tree struct {
+	type OSM struct {
 		XMLName xml.Name `xml:"osm"`
 		Way     Way      `xml:"way"`
 	}
 
-	tree := Tree{}
-	err = xml.Unmarshal(rsp, &tree)
+	osm := OSM{}
+	err = xml.Unmarshal(rsp, &osm)
 
 	if err != nil {
 		return nil, err
 	}
 
-	count := len(tree.Way.NodeRefs)
+	count := len(osm.Way.NodeRefs)
 	nodes := make([]*Node, count)
 
 	wg := new(sync.WaitGroup)
 
-	for idx, n := range tree.Way.NodeRefs {
+	for idx, n := range osm.Way.NodeRefs {
 
 		wg.Add(1)
 
@@ -168,19 +185,19 @@ func ProcessNode(id int) (*Node, error) {
 		return nil, err
 	}
 
-	type Tree struct {
+	type OSM struct {
 		XMLName xml.Name `xml:"osm"`
 		Node    Node     `xml:"node"`
 	}
 
-	tree := Tree{}
-	err = xml.Unmarshal(rsp, &tree)
+	osm := OSM{}
+	err = xml.Unmarshal(rsp, &osm)
 
 	if err != nil {
 		return nil, err
 	}
 
-	node := tree.Node
+	node := osm.Node
 	return &node, nil
 }
 
@@ -215,6 +232,7 @@ func main() {
 	var way = flag.Bool("way", false, "")
 	var rel = flag.Bool("rel", false, "")
 	var id = flag.Int("id", 0, "")
+	var procs = flag.Int("procs", 100, "")
 
 	flag.Parse()
 
@@ -226,11 +244,9 @@ func main() {
 		panic("ZERO")
 	}
 
-	procs := 200
+	ch = make(chan bool, *procs)
 
-	ch = make(chan bool, procs)
-
-	for i := 0; i < procs; i++ {
+	for i := 0; i < *procs; i++ {
 		go func() { ch <- true }()
 	}
 
@@ -255,6 +271,8 @@ func main() {
 
 	t2 := time.Since(t1)
 	fmt.Printf("%d nodes in %v\n", len(nodes), t2)
+
+	// sudo make me geojson...
 
 	json.Marshal(nodes)
 	// fmt.Printf("%s\n", str)
