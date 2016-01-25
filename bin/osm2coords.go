@@ -40,6 +40,7 @@ type NodeRef struct {
 type Rel struct {
 	Id      int      `xml:"id,attr"`
 	Members []Member `xml:"member"`
+	Role	string	 `xml:"role"`
 }
 
 type Member struct {
@@ -285,6 +286,12 @@ func Nodes2GeoJSON(el string, id *int, nodes []*Node) GeoJSONFeature {
 		// Please write me...
 		// https://wiki.openstreetmap.org/wiki/Relation
 		// https://wiki.openstreetmap.org/wiki/Types_of_relation
+
+		// Also...what???
+		// https://wiki.openstreetmap.org/wiki/Super-Relation
+
+		// lots of inner/outer
+		// http://www.openstreetmap.org/relation/11
 	}
 
 	props := GeoJSONProperties{
@@ -292,7 +299,6 @@ func Nodes2GeoJSON(el string, id *int, nodes []*Node) GeoJSONFeature {
 	}
 
 	feature := GeoJSONFeature{"Feature", geom, props, *id}
-
 	return feature
 }
 
